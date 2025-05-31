@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Stazione Meteo - IROME8355</title>
+  <meta name="description" content="Dashboard meteo per la stazione IROME8355: dati in tempo reale, previsioni, qualità dell'aria, radar e mappa." />
+  <link rel="icon" href="favicon.ico" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
     body {
@@ -65,9 +67,9 @@
     <div class="card" id="realtime">
       <h2>Dati in Tempo Reale</h2>
       <div class="flex">
-        <div>🌡️ Temperatura: <span id="temp"></span> °C</div>
-        <div>💧 Umidità: <span id="humidity"></span>%</div>
-        <div>🌬️ Vento: <span id="wind_speed"></span> km/h (<span id="wind_dir"></span>°)</div>
+        <div>🌡️ Temperatura: <span id="temp">⏳</span> °C</div>
+        <div>💧 Umidità: <span id="humidity">⏳</span>%</div>
+        <div>🌬️ Vento: <span id="wind_speed">⏳</span> km/h (<span id="wind_dir">⏳</span>°)</div>
       </div>
     </div>
 
@@ -78,7 +80,7 @@
 
     <div class="card" id="air-quality">
       <h2>Qualità dell'Aria</h2>
-      <div>🌫️ AQI: <span id="aqi"></span> - <span id="aqi_desc"></span></div>
+      <div>🌫️ AQI: <span id="aqi">⏳</span> - <span id="aqi_desc">⏳</span></div>
     </div>
 
     <div class="card">
@@ -107,14 +109,19 @@
     const lon = 12.3400;
 
     async function fetchRealtime() {
-      const url = `https://api.weather.com/v2/pws/observations/current?stationId=${STATION_ID}&format=json&units=m&apiKey=${API_KEY}`;
-      const res = await fetch(url);
-      const data = await res.json();
-      const obs = data.observations[0];
-      document.getElementById("temp").textContent = obs.metric.temp;
-      document.getElementById("humidity").textContent = obs.humidity;
-      document.getElementById("wind_speed").textContent = obs.metric.windSpeed;
-      document.getElementById("wind_dir").textContent = obs.winddir;
+      try {
+        const url = `https://api.weather.com/v2/pws/observations/current?stationId=${STATION_ID}&format=json&units=m&apiKey=${API_KEY}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        const obs = data.observations[0];
+        document.getElementById("temp").textContent = obs.metric.temp;
+        document.getElementById("humidity").textContent = obs.humidity;
+        document.getElementById("wind_speed").textContent = obs.metric.windSpeed;
+        document.getElementById("wind_dir").textContent = obs.winddir;
+      } catch (error) {
+        console.error("Errore dati in tempo reale:", error);
+        document.getElementById("realtime").innerHTML += "<p>⚠️ Dati in tempo reale non disponibili.</p>";
+      }
     }
 
     async function fetchForecast() {
@@ -133,11 +140,16 @@
     }
 
     async function fetchAirQuality() {
-      const url = `https://api.weather.com/v3/wx/globalAirQuality?geocode=${lat},${lon}&format=json&language=it-IT&apiKey=${API_KEY}`;
-      const res = await fetch(url);
-      const data = await res.json();
-      document.getElementById("aqi").textContent = data.globalAQI;
-      document.getElementById("aqi_desc").textContent = data.category;
+      try {
+        const url = `https://api.weather.com/v3/wx/globalAirQuality?geocode=${lat},${lon}&format=json&language=it-IT&apiKey=${API_KEY}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        document.getElementById("aqi").textContent = data.globalAQI;
+        document.getElementById("aqi_desc").textContent = data.category;
+      } catch (error) {
+        console.error("Errore qualità aria:", error);
+        document.getElementById("air-quality").innerHTML += "<p>⚠️ Qualità dell’aria non disponibile.</p>";
+      }
     }
 
     async function fetchTemperatureChart() {
