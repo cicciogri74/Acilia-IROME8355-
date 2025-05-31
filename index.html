@@ -6,15 +6,12 @@
   <title>Stazione Meteo - IROME8355</title>
   <meta name="description" content="Dashboard meteo per la stazione IROME8355: dati in tempo reale, previsioni, qualità dell'aria, radar e mappa." />
   <link rel="icon" href="favicon.ico" />
+  
+  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <!-- Font Awesome CDN per icone -->
-  <link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-    integrity="sha512-p0dl0m8yrEJ5JnOtX/wOEDe+Xf1MpEcJ1Io+yt8u5rJHp4FzWy6E2xIqX2/uQ1SyXIRKJzIU7l3f0vC/7yj9Dw=="
-    crossorigin="anonymous"
-    referrerpolicy="no-referrer"
-  />
+  <!-- Font Awesome per icone -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -44,13 +41,13 @@
       display: flex;
       flex-wrap: wrap;
       gap: 1rem;
+      font-size: 1.1rem;
     }
     .flex > div {
       flex: 1 1 200px;
       display: flex;
       align-items: center;
-      gap: 0.4rem;
-      font-size: 1.1rem;
+      gap: 0.5rem;
     }
     iframe, #map {
       width: 100%;
@@ -62,9 +59,18 @@
       width: 100%;
       height: 300px;
     }
+    #last-update {
+      font-size: 0.9rem;
+      color: #555;
+      margin-top: 0.5rem;
+      font-style: italic;
+    }
     @media (max-width: 600px) {
       iframe, #map {
         height: 300px;
+      }
+      .flex {
+        font-size: 1rem;
       }
     }
   </style>
@@ -77,7 +83,7 @@
 
   <div class="container">
     <div class="card" id="realtime">
-      <h2><i class="fas fa-clock"></i> Dati in Tempo Reale</h2>
+      <h2>Dati in Tempo Reale</h2>
       <div class="flex">
         <div><i class="fas fa-temperature-high" style="color:#FF5733;"></i> Temperatura: <span id="temp">⏳</span> °C</div>
         <div><i class="fas fa-tint" style="color:#3498db;"></i> Umidità: <span id="humidity">⏳</span>%</div>
@@ -86,6 +92,7 @@
         <div><i class="fas fa-cloud-rain" style="color:#2980b9;"></i> Pioggia attuale: <span id="precip_today">⏳</span> mm</div>
         <div><i class="fas fa-sun" style="color:#f39c12;"></i> Indice UV: <span id="uv_index">⏳</span></div>
       </div>
+      <div id="last-update">Ultimo aggiornamento: ⏳</div>
     </div>
 
     <div class="card" id="forecast">
@@ -129,6 +136,7 @@
         const res = await fetch(url);
         const data = await res.json();
         const obs = data.observations[0];
+
         document.getElementById("temp").textContent = obs.metric.temp;
         document.getElementById("humidity").textContent = obs.humidity;
         document.getElementById("wind_speed").textContent = obs.metric.windSpeed;
@@ -139,9 +147,18 @@
         document.getElementById("precip_today").textContent = obs.metric.precipRate !== undefined ? obs.metric.precipRate : "0";
         document.getElementById("uv_index").textContent = obs.uv !== undefined ? obs.uv : "N/A";
 
+        // Ultimo aggiornamento
+        if (obs.obsTimeUtc) {
+          const dt = new Date(obs.obsTimeUtc + "Z"); // UTC time
+          document.getElementById("last-update").textContent = "Ultimo aggiornamento: " + dt.toLocaleString("it-IT");
+        } else {
+          document.getElementById("last-update").textContent = "Ultimo aggiornamento: N/A";
+        }
+
       } catch (error) {
         console.error("Errore dati in tempo reale:", error);
-        document.getElementById("realtime").innerHTML += "<p>⚠️ Dati in tempo reale non disponibili.</p>";
+        const realtimeDiv = document.getElementById("realtime");
+        realtimeDiv.innerHTML += "<p>⚠️ Dati in tempo reale non disponibili.</p>";
       }
     }
 
