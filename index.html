@@ -87,7 +87,7 @@
     </div>
 
     <div class="card">
-      <h2>Grafico Temperatura (Ultime 24h)</h2>
+      <h2>Grafico Temperature Max/Min (5 Giorni)</h2>
       <canvas id="tempChart"></canvas>
     </div>
 
@@ -141,39 +141,46 @@
     }
 
     async function fetchTemperatureChart() {
-      const url = `https://api.weather.com/v2/pws/history/hourly?stationId=${STATION_ID}&format=json&units=m&hours=24&apiKey=${API_KEY}`;
+      const url = `https://api.weather.com/v3/wx/forecast/daily/5day?geocode=${lat},${lon}&format=json&units=m&language=it-IT&apiKey=${API_KEY}`;
       try {
         const res = await fetch(url);
         const data = await res.json();
 
-        if (!data.observations || data.observations.length === 0) {
-          throw new Error("Nessuna osservazione disponibile");
-        }
-
-        const validObs = data.observations.filter(obs => obs.metric && typeof obs.metric.temp === 'number');
-
-        const labels = validObs.map(obs => obs.obsTimeLocal.slice(11, 16));
-        const temps = validObs.map(obs => obs.metric.temp);
-
-        if (temps.length === 0) {
-          throw new Error("Dati di temperatura non disponibili.");
-        }
+        const days = data.dayOfWeek;
+        const maxTemps = data.temperatureMax;
+        const minTemps = data.temperatureMin;
 
         new Chart(document.getElementById("tempChart"), {
           type: "line",
           data: {
-            labels: labels,
-            datasets: [{
-              label: "Temperatura (°C)",
-              data: temps,
-              borderColor: "#0078D7",
-              backgroundColor: "rgba(0, 120, 215, 0.1)",
-              fill: true,
-              tension: 0.3
-            }]
+            labels: days,
+            datasets: [
+              {
+                label: "Temperatura Massima (°C)",
+                data: maxTemps,
+                borderColor: "#FF5733",
+                backgroundColor: "rgba(255, 87, 51, 0.1)",
+                fill: true,
+                tension: 0.3
+              },
+              {
+                label: "Temperatura Minima (°C)",
+                data: minTemps,
+                borderColor: "#3498db",
+                backgroundColor: "rgba(52, 152, 219, 0.1)",
+                fill: true,
+                tension: 0.3
+              }
+            ]
           },
           options: {
             responsive: true,
+            plugins: {
+              title: {
+                display: true,
+                text: "Temperature Max/Min - Prossimi 5 Giorni"
+              }
+            },
             scales: {
               y: {
                 beginAtZero: false
@@ -181,8 +188,9 @@
             }
           }
         });
+
       } catch (error) {
-        console.error("Errore grafico temperatura:", error.message);
+        console.error("Errore grafico temperature:", error.message);
         document.getElementById("tempChart").replaceWith("⚠️ Impossibile caricare il grafico delle temperature.");
       }
     }
