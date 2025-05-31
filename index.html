@@ -7,10 +7,13 @@
   <meta name="description" content="Dashboard meteo per la stazione IROME8355: dati in tempo reale, previsioni, qualità dell'aria, radar e mappa." />
   <link rel="icon" href="favicon.ico" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <!-- Font Awesome -->
+  <!-- Font Awesome CDN per icone -->
   <link
     rel="stylesheet"
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    integrity="sha512-p0dl0m8yrEJ5JnOtX/wOEDe+Xf1MpEcJ1Io+yt8u5rJHp4FzWy6E2xIqX2/uQ1SyXIRKJzIU7l3f0vC/7yj9Dw=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
   />
   <style>
     body {
@@ -46,12 +49,8 @@
       flex: 1 1 200px;
       display: flex;
       align-items: center;
+      gap: 0.4rem;
       font-size: 1.1rem;
-    }
-    .flex i {
-      margin-right: 0.5rem;
-      min-width: 24px;
-      text-align: center;
     }
     iframe, #map {
       width: 100%;
@@ -72,7 +71,7 @@
 </head>
 <body>
   <header>
-    <h1><i class="fas fa-cloud-sun"></i> Stazione Meteo - IROME8355</h1>
+    <h1>Stazione Meteo - IROME8355</h1>
     <p>Dati in tempo reale da Weather Underground</p>
   </header>
 
@@ -83,31 +82,34 @@
         <div><i class="fas fa-temperature-high" style="color:#FF5733;"></i> Temperatura: <span id="temp">⏳</span> °C</div>
         <div><i class="fas fa-tint" style="color:#3498db;"></i> Umidità: <span id="humidity">⏳</span>%</div>
         <div><i class="fas fa-wind" style="color:#1abc9c;"></i> Vento: <span id="wind_speed">⏳</span> km/h (<span id="wind_dir">⏳</span>°)</div>
+        <div><i class="fas fa-thermometer-empty" style="color:#8e44ad;"></i> Punto di rugiada: <span id="dew_point">⏳</span> °C</div>
+        <div><i class="fas fa-cloud-rain" style="color:#2980b9;"></i> Pioggia attuale: <span id="precip_today">⏳</span> mm</div>
+        <div><i class="fas fa-sun" style="color:#f39c12;"></i> Indice UV: <span id="uv_index">⏳</span></div>
       </div>
     </div>
 
     <div class="card" id="forecast">
-      <h2><i class="fas fa-cloud-sun-rain"></i> Previsioni</h2>
+      <h2>Previsioni</h2>
       <div id="forecast-content"></div>
     </div>
 
     <div class="card" id="air-quality">
-      <h2><i class="fas fa-smog"></i> Qualità dell'Aria</h2>
-      <div><i class="fas fa-wind" style="color:#7f8c8d;"></i> AQI: <span id="aqi">⏳</span> - <span id="aqi_desc">⏳</span></div>
+      <h2>Qualità dell'Aria</h2>
+      <div>🌫️ AQI: <span id="aqi">⏳</span> - <span id="aqi_desc">⏳</span></div>
     </div>
 
     <div class="card">
-      <h2><i class="fas fa-broadcast-tower"></i> Radar Meteorologico</h2>
+      <h2>Radar Meteorologico</h2>
       <iframe src="https://embed.windy.com/embed2.html?lat=41.7708&lon=12.34&detailLat=41.7708&detailLon=12.34&width=650&height=450&zoom=8&level=surface&overlay=radar&menu=true&message=true&marker=true&calendar=now&pressure=true&type=map&location=coordinates&detail=true&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1" loading="lazy"></iframe>
     </div>
 
     <div class="card">
-      <h2><i class="fas fa-chart-line"></i> Grafico Temperature Max/Min (5 Giorni)</h2>
+      <h2>Grafico Temperature Max/Min (5 Giorni)</h2>
       <canvas id="tempChart"></canvas>
     </div>
 
     <div class="card">
-      <h2><i class="fas fa-map-marker-alt"></i> Mappa della Stazione</h2>
+      <h2>Mappa della Stazione</h2>
       <div id="map"></div>
     </div>
   </div>
@@ -131,6 +133,12 @@
         document.getElementById("humidity").textContent = obs.humidity;
         document.getElementById("wind_speed").textContent = obs.metric.windSpeed;
         document.getElementById("wind_dir").textContent = obs.winddir;
+
+        // Nuovi dati
+        document.getElementById("dew_point").textContent = obs.metric.dewpt !== undefined ? obs.metric.dewpt : "N/A";
+        document.getElementById("precip_today").textContent = obs.metric.precipRate !== undefined ? obs.metric.precipRate : "0";
+        document.getElementById("uv_index").textContent = obs.uv !== undefined ? obs.uv : "N/A";
+
       } catch (error) {
         console.error("Errore dati in tempo reale:", error);
         document.getElementById("realtime").innerHTML += "<p>⚠️ Dati in tempo reale non disponibili.</p>";
