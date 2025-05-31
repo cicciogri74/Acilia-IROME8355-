@@ -6,18 +6,25 @@
   <title>Stazione Meteo - IROME8355</title>
   <meta name="description" content="Dashboard meteo per la stazione IROME8355: dati in tempo reale, previsioni, qualità dell'aria, radar e mappa." />
   <link rel="icon" href="favicon.ico" />
-  
-  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <!-- Font Awesome per icone -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <style>
+    :root {
+      --bg-day: #e0f2ff;
+      --bg-night: #1a1a2e;
+      --color-day: #333;
+      --color-night: #fff;
+    }
     body {
       font-family: Arial, sans-serif;
       margin: 0;
-      background: #f0f2f5;
-      color: #333;
+      background: var(--bg-day);
+      color: var(--color-day);
+      transition: background 0.5s, color 0.5s;
+    }
+    body.dark {
+      background: var(--bg-night);
+      color: var(--color-night);
     }
     header {
       background: #0078D7;
@@ -37,17 +44,17 @@
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
+    body.dark .card {
+      background: #2c2c3c;
+      color: white;
+    }
     .flex {
       display: flex;
       flex-wrap: wrap;
       gap: 1rem;
-      font-size: 1.1rem;
     }
     .flex > div {
       flex: 1 1 200px;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
     }
     iframe, #map {
       width: 100%;
@@ -59,23 +66,25 @@
       width: 100%;
       height: 300px;
     }
-    #last-update {
-      font-size: 0.9rem;
-      color: #555;
-      margin-top: 0.5rem;
-      font-style: italic;
+    #theme-toggle {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #fff;
+      border: none;
+      padding: 0.5rem;
+      border-radius: 8px;
+      cursor: pointer;
     }
     @media (max-width: 600px) {
       iframe, #map {
         height: 300px;
       }
-      .flex {
-        font-size: 1rem;
-      }
     }
   </style>
 </head>
 <body>
+  <button id="theme-toggle"><i class="fas fa-adjust"></i></button>
   <header>
     <h1>Stazione Meteo - IROME8355</h1>
     <p>Dati in tempo reale da Weather Underground</p>
@@ -83,40 +92,45 @@
 
   <div class="container">
     <div class="card" id="realtime">
-      <h2>Dati in Tempo Reale</h2>
+      <h2><i class="fas fa-clock"></i> Dati in Tempo Reale</h2>
       <div class="flex">
-        <div><i class="fas fa-temperature-high" style="color:#FF5733;"></i> Temperatura: <span id="temp">⏳</span> °C</div>
-        <div><i class="fas fa-tint" style="color:#3498db;"></i> Umidità: <span id="humidity">⏳</span>%</div>
-        <div><i class="fas fa-wind" style="color:#1abc9c;"></i> Vento: <span id="wind_speed">⏳</span> km/h (<span id="wind_dir">⏳</span>°)</div>
-        <div><i class="fas fa-thermometer-empty" style="color:#8e44ad;"></i> Punto di rugiada: <span id="dew_point">⏳</span> °C</div>
-        <div><i class="fas fa-cloud-rain" style="color:#2980b9;"></i> Pioggia attuale: <span id="precip_today">⏳</span> mm</div>
-        <div><i class="fas fa-sun" style="color:#f39c12;"></i> Indice UV: <span id="uv_index">⏳</span></div>
+        <div><i class="fas fa-temperature-high"></i> Temperatura: <span id="temp">⏳</span> °C</div>
+        <div><i class="fas fa-tint"></i> Umidità: <span id="humidity">⏳</span>%</div>
+        <div><i class="fas fa-wind fa-spin"></i> Vento: <span id="wind_speed">⏳</span> km/h (<span id="wind_dir">⏳</span>°)</div>
+        <div><i class="fas fa-cloud-rain"></i> Pioggia Attuale: <span id="precip">⏳</span> mm</div>
+        <div><i class="fas fa-sun"></i> Indice UV: <span id="uv">⏳</span></div>
+        <div><i class="fas fa-thermometer-half"></i> Punto di Rugiada: <span id="dew">⏳</span> °C</div>
+        <div><i class="fas fa-clock-rotate-left"></i> Ultimo aggiornamento: <span id="obs_time">⏳</span></div>
       </div>
-      <div id="last-update">Ultimo aggiornamento: ⏳</div>
+    </div>
+
+    <div class="card" id="alerts">
+      <h2><i class="fas fa-bell"></i> Allerta Meteo</h2>
+      <div id="alert-content">⏳</div>
     </div>
 
     <div class="card" id="forecast">
-      <h2>Previsioni</h2>
+      <h2><i class="fas fa-calendar-day"></i> Previsioni</h2>
       <div id="forecast-content"></div>
     </div>
 
     <div class="card" id="air-quality">
-      <h2>Qualità dell'Aria</h2>
-      <div>🌫️ AQI: <span id="aqi">⏳</span> - <span id="aqi_desc">⏳</span></div>
+      <h2><i class="fas fa-smog"></i> Qualità dell'Aria</h2>
+      <div>AQI: <span id="aqi">⏳</span> - <span id="aqi_desc">⏳</span></div>
     </div>
 
     <div class="card">
-      <h2>Radar Meteorologico</h2>
+      <h2><i class="fas fa-radar"></i> Radar Meteorologico</h2>
       <iframe src="https://embed.windy.com/embed2.html?lat=41.7708&lon=12.34&detailLat=41.7708&detailLon=12.34&width=650&height=450&zoom=8&level=surface&overlay=radar&menu=true&message=true&marker=true&calendar=now&pressure=true&type=map&location=coordinates&detail=true&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1" loading="lazy"></iframe>
     </div>
 
     <div class="card">
-      <h2>Grafico Temperature Max/Min (5 Giorni)</h2>
+      <h2><i class="fas fa-chart-line"></i> Grafico Temperature Max/Min (5 Giorni)</h2>
       <canvas id="tempChart"></canvas>
     </div>
 
     <div class="card">
-      <h2>Mappa della Stazione</h2>
+      <h2><i class="fas fa-map-marked-alt"></i> Mappa della Stazione</h2>
       <div id="map"></div>
     </div>
   </div>
@@ -136,29 +150,18 @@
         const res = await fetch(url);
         const data = await res.json();
         const obs = data.observations[0];
-
         document.getElementById("temp").textContent = obs.metric.temp;
         document.getElementById("humidity").textContent = obs.humidity;
         document.getElementById("wind_speed").textContent = obs.metric.windSpeed;
         document.getElementById("wind_dir").textContent = obs.winddir;
-
-        // Nuovi dati
-        document.getElementById("dew_point").textContent = obs.metric.dewpt !== undefined ? obs.metric.dewpt : "N/A";
-        document.getElementById("precip_today").textContent = obs.metric.precipRate !== undefined ? obs.metric.precipRate : "0";
-        document.getElementById("uv_index").textContent = obs.uv !== undefined ? obs.uv : "N/A";
-
-        // Ultimo aggiornamento
-        if (obs.obsTimeUtc) {
-          const dt = new Date(obs.obsTimeUtc + "Z"); // UTC time
-          document.getElementById("last-update").textContent = "Ultimo aggiornamento: " + dt.toLocaleString("it-IT");
-        } else {
-          document.getElementById("last-update").textContent = "Ultimo aggiornamento: N/A";
-        }
-
+        document.getElementById("precip").textContent = obs.metric.precipRate;
+        document.getElementById("uv").textContent = obs.uv;
+        document.getElementById("dew").textContent = obs.metric.dewpt;
+        document.getElementById("obs_time").textContent = new Date(obs.obsTimeUtc).toLocaleString("it-IT");
+        updateBackground(obs.metric.temp);
       } catch (error) {
         console.error("Errore dati in tempo reale:", error);
-        const realtimeDiv = document.getElementById("realtime");
-        realtimeDiv.innerHTML += "<p>⚠️ Dati in tempo reale non disponibili.</p>";
+        document.getElementById("realtime").innerHTML += "<p>⚠️ Dati in tempo reale non disponibili.</p>";
       }
     }
 
@@ -195,7 +198,6 @@
       try {
         const res = await fetch(url);
         const data = await res.json();
-
         const days = data.dayOfWeek;
         const maxTemps = data.temperatureMax;
         const minTemps = data.temperatureMin;
@@ -206,20 +208,20 @@
             labels: days,
             datasets: [
               {
-                label: "Temperatura Massima (°C)",
+                label: "Temperatura Max (°C)",
                 data: maxTemps,
                 borderColor: "#FF5733",
-                backgroundColor: "rgba(255, 87, 51, 0.1)",
                 fill: true,
-                tension: 0.3
+                backgroundColor: "rgba(255,87,51,0.2)",
+                tension: 0.4
               },
               {
-                label: "Temperatura Minima (°C)",
+                label: "Temperatura Min (°C)",
                 data: minTemps,
                 borderColor: "#3498db",
-                backgroundColor: "rgba(52, 152, 219, 0.1)",
                 fill: true,
-                tension: 0.3
+                backgroundColor: "rgba(52,152,219,0.2)",
+                tension: 0.4
               }
             ]
           },
@@ -228,12 +230,7 @@
             plugins: {
               title: {
                 display: true,
-                text: "Temperature Max/Min - Prossimi 5 Giorni"
-              }
-            },
-            scales: {
-              y: {
-                beginAtZero: false
+                text: "Temperature Max/Min - 5 Giorni"
               }
             }
           }
@@ -241,7 +238,34 @@
 
       } catch (error) {
         console.error("Errore grafico temperature:", error.message);
-        document.getElementById("tempChart").replaceWith("⚠️ Impossibile caricare il grafico delle temperature.");
+        document.getElementById("tempChart").replaceWith("⚠️ Impossibile caricare il grafico.");
+      }
+    }
+
+    async function fetchAlerts() {
+      try {
+        const url = `https://api.weather.com/v3/alerts/headlines?geocode=${lat},${lon}&format=json&language=it-IT&apiKey=${API_KEY}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.alerts && data.alerts.length > 0) {
+          const alertHtml = data.alerts.map(alert => `<p><strong>${alert.eventDescription}:</strong> ${alert.headlineText}</p>`).join("");
+          document.getElementById("alert-content").innerHTML = alertHtml;
+        } else {
+          document.getElementById("alert-content").innerHTML = "<p>Nessuna allerta attiva.</p>";
+        }
+      } catch (error) {
+        console.error("Errore allerta meteo:", error);
+        document.getElementById("alert-content").innerHTML = "<p>⚠️ Impossibile recuperare gli avvisi meteo.</p>";
+      }
+    }
+
+    function updateBackground(temp) {
+      if (temp < 10) {
+        document.body.style.background = "#cce0ff";
+      } else if (temp > 30) {
+        document.body.style.background = "#ffe0cc";
+      } else {
+        document.body.style.background = "";
       }
     }
 
@@ -253,11 +277,16 @@
       L.marker([lat, lon]).addTo(map).bindPopup("Stazione IROME8355").openPopup();
     }
 
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+      document.body.classList.toggle("dark");
+    });
+
     // Avvio
     fetchRealtime();
     fetchForecast();
     fetchAirQuality();
     fetchTemperatureChart();
+    fetchAlerts();
     initMap();
 
     // Aggiorna ogni 5 minuti
