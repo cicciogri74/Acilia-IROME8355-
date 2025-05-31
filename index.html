@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Stazione Meteo - IROME8355</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
@@ -145,17 +145,29 @@
       try {
         const res = await fetch(url);
         const data = await res.json();
-        const hours = data.observations.map(obs => obs.obsTimeLocal.slice(11, 16));
-        const temps = data.observations.map(obs => obs.metric.temp); // <-- uso "temp" diretto
-        new Chart(document.getElementById('tempChart'), {
-          type: 'line',
+
+        if (!data.observations || data.observations.length === 0) {
+          throw new Error("Nessuna osservazione disponibile");
+        }
+
+        const validObs = data.observations.filter(obs => obs.metric && typeof obs.metric.temp === 'number');
+
+        const labels = validObs.map(obs => obs.obsTimeLocal.slice(11, 16));
+        const temps = validObs.map(obs => obs.metric.temp);
+
+        if (temps.length === 0) {
+          throw new Error("Dati di temperatura non disponibili.");
+        }
+
+        new Chart(document.getElementById("tempChart"), {
+          type: "line",
           data: {
-            labels: hours,
+            labels: labels,
             datasets: [{
               label: "Temperatura (°C)",
               data: temps,
               borderColor: "#0078D7",
-              backgroundColor: "rgba(0,120,215,0.1)",
+              backgroundColor: "rgba(0, 120, 215, 0.1)",
               fill: true,
               tension: 0.3
             }]
@@ -170,8 +182,8 @@
           }
         });
       } catch (error) {
-        console.error("Errore nel grafico temperatura:", error);
-        document.getElementById("tempChart").replaceWith("⚠️ Impossibile caricare il grafico.");
+        console.error("Errore grafico temperatura:", error.message);
+        document.getElementById("tempChart").replaceWith("⚠️ Impossibile caricare il grafico delle temperature.");
       }
     }
 
@@ -183,14 +195,14 @@
       L.marker([lat, lon]).addTo(map).bindPopup("Stazione IROME8355").openPopup();
     }
 
-    // Caricamento iniziale
+    // Avvio
     fetchRealtime();
     fetchForecast();
     fetchAirQuality();
     fetchTemperatureChart();
     initMap();
 
-    // Aggiorna i dati ogni 5 minuti
+    // Aggiorna ogni 5 minuti
     setInterval(fetchRealtime, 300000);
   </script>
 </body>
