@@ -1,10 +1,11 @@
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Stazione Meteo - IROME8355</title>
-  <meta name="description" content="Dashboard meteo per la stazione IROME8355: dati in tempo reale, previsioni, qualità dell'aria, radar e mappa." />
+  <meta name="description" content="Dashboard meteo per la stazione IROME8355: dati in tempo reale, previsioni, radar e mappa." />
   <link rel="icon" href="favicon.ico" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
@@ -104,24 +105,14 @@
       </div>
     </div>
 
-    <div class="card" id="alerts">
-      <h2><i class="fas fa-bell"></i> Allerta Meteo</h2>
-      <div id="alert-content">⏳</div>
-    </div>
-
     <div class="card" id="forecast">
       <h2><i class="fas fa-calendar-day"></i> Previsioni</h2>
       <div id="forecast-content"></div>
     </div>
 
-    <div class="card" id="air-quality">
-      <h2><i class="fas fa-smog"></i> Qualità dell'Aria</h2>
-      <div>AQI: <span id="aqi">⏳</span> - <span id="aqi_desc">⏳</span></div>
-    </div>
-
     <div class="card">
       <h2><i class="fas fa-radar"></i> Radar Meteorologico</h2>
-      <iframe src="https://embed.windy.com/embed2.html?lat=41.7708&lon=12.34&detailLat=41.7708&detailLon=12.34&width=650&height=450&zoom=8&level=surface&overlay=radar&menu=true&message=true&marker=true&calendar=now&pressure=true&type=map&location=coordinates&detail=true&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1" loading="lazy"></iframe>
+      <iframe src="https://embed.windy.com/embed2.html?lat=41.7708&lon=12.34&detailLat=41.7708&detailLon=12.34&width=100%&height=450&zoom=11&level=surface&overlay=radar&menu=false&message=true&marker=true&calendar=now&pressure=true&type=map&location=coordinates&detail=true&metricWind=km%2Fh&metricTemp=%C2%B0C" loading="lazy"></iframe>
     </div>
 
     <div class="card">
@@ -180,19 +171,6 @@
       }
     }
 
-    async function fetchAirQuality() {
-      try {
-        const url = `https://api.weather.com/v3/wx/globalAirQuality?geocode=${lat},${lon}&format=json&language=it-IT&apiKey=${API_KEY}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        document.getElementById("aqi").textContent = data.globalAQI;
-        document.getElementById("aqi_desc").textContent = data.category;
-      } catch (error) {
-        console.error("Errore qualità aria:", error);
-        document.getElementById("air-quality").innerHTML += "<p>⚠️ Qualità dell’aria non disponibile.</p>";
-      }
-    }
-
     async function fetchTemperatureChart() {
       const url = `https://api.weather.com/v3/wx/forecast/daily/5day?geocode=${lat},${lon}&format=json&units=m&language=it-IT&apiKey=${API_KEY}`;
       try {
@@ -208,29 +186,54 @@
             labels: days,
             datasets: [
               {
-                label: "Temperatura Max (°C)",
+                label: "Max (°C)",
                 data: maxTemps,
-                borderColor: "#FF5733",
-                fill: true,
-                backgroundColor: "rgba(255,87,51,0.2)",
-                tension: 0.4
+                borderColor: "#e74c3c",
+                backgroundColor: "rgba(231, 76, 60, 0.2)",
+                tension: 0.4,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                fill: true
               },
               {
-                label: "Temperatura Min (°C)",
+                label: "Min (°C)",
                 data: minTemps,
-                borderColor: "#3498db",
-                fill: true,
-                backgroundColor: "rgba(52,152,219,0.2)",
-                tension: 0.4
+                borderColor: "#2980b9",
+                backgroundColor: "rgba(41, 128, 185, 0.2)",
+                tension: 0.4,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                fill: true
               }
             ]
           },
           options: {
             responsive: true,
             plugins: {
+              legend: {
+                position: 'top'
+              },
+              tooltip: {
+                mode: 'index',
+                intersect: false
+              },
               title: {
                 display: true,
-                text: "Temperature Max/Min - 5 Giorni"
+                text: "Andamento Temperature (Prossimi 5 Giorni)"
+              }
+            },
+            interaction: {
+              mode: 'nearest',
+              axis: 'x',
+              intersect: false
+            },
+            scales: {
+              y: {
+                beginAtZero: false,
+                title: {
+                  display: true,
+                  text: 'Temperatura (°C)'
+                }
               }
             }
           }
@@ -239,23 +242,6 @@
       } catch (error) {
         console.error("Errore grafico temperature:", error.message);
         document.getElementById("tempChart").replaceWith("⚠️ Impossibile caricare il grafico.");
-      }
-    }
-
-    async function fetchAlerts() {
-      try {
-        const url = `https://api.weather.com/v3/alerts/headlines?geocode=${lat},${lon}&format=json&language=it-IT&apiKey=${API_KEY}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        if (data.alerts && data.alerts.length > 0) {
-          const alertHtml = data.alerts.map(alert => `<p><strong>${alert.eventDescription}:</strong> ${alert.headlineText}</p>`).join("");
-          document.getElementById("alert-content").innerHTML = alertHtml;
-        } else {
-          document.getElementById("alert-content").innerHTML = "<p>Nessuna allerta attiva.</p>";
-        }
-      } catch (error) {
-        console.error("Errore allerta meteo:", error);
-        document.getElementById("alert-content").innerHTML = "<p>⚠️ Impossibile recuperare gli avvisi meteo.</p>";
       }
     }
 
@@ -284,9 +270,7 @@
     // Avvio
     fetchRealtime();
     fetchForecast();
-    fetchAirQuality();
     fetchTemperatureChart();
-    fetchAlerts();
     initMap();
 
     // Aggiorna ogni 5 minuti
